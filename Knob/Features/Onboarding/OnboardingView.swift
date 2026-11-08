@@ -16,37 +16,42 @@ struct OnboardingView: View {
                 .font(.title)
                 .bold()
 
-            Text("Knob blocks distracting apps and websites during focus sessions. To block websites, macOS needs you to approve a network content filter extension.")
-                .multilineTextAlignment(.center)
+            Text("Knob blocks distracting apps during focus sessions.")
                 .foregroundStyle(.secondary)
-                .frame(maxWidth: 420)
 
-            if let errorMessage {
-                Text(errorMessage)
-                    .font(.callout)
-                    .foregroundStyle(.red)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: 420)
-            }
-
-            Button {
-                activate()
-            } label: {
-                if isActivating {
-                    ProgressView()
-                        .controlSize(.small)
-                } else {
-                    Text("Enable Website Blocking")
+            if FeatureFlags.websiteBlockingEnabled {
+                if let errorMessage {
+                    Text(errorMessage)
+                        .font(.callout)
+                        .foregroundStyle(.red)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: 420)
                 }
-            }
-            .buttonStyle(.borderedProminent)
-            .disabled(isActivating)
 
-            Button("Skip for now (app blocking only)") {
-                onboardingComplete = true
+                Button {
+                    activate()
+                } label: {
+                    if isActivating {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else {
+                        Text("Enable Website Blocking")
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(isActivating)
+
+                Button("Skip for now (app blocking only)") {
+                    onboardingComplete = true
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
+            } else {
+                Button("Get Started") {
+                    onboardingComplete = true
+                }
+                .buttonStyle(.borderedProminent)
             }
-            .buttonStyle(.plain)
-            .foregroundStyle(.secondary)
         }
         .padding(40)
         .frame(maxWidth: .infinity, maxHeight: .infinity)

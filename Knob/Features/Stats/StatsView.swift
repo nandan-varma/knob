@@ -41,11 +41,6 @@ struct StatsView: View {
                                     .font(.caption)
                                     .foregroundStyle(.orange)
                             }
-                            if session.endedEarly {
-                                Text("Ended early")
-                                    .font(.caption)
-                                    .foregroundStyle(.red)
-                            }
                         }
                         Divider()
                     }
@@ -69,7 +64,7 @@ struct StatsView: View {
 
     private var totalFocusSeconds: TimeInterval {
         completedSessions.reduce(0) { total, session in
-            total + (session.endedAt ?? session.plannedEndAt).timeIntervalSince(session.startedAt)
+            total + (session.endedAt ?? session.startedAt).timeIntervalSince(session.startedAt)
         }
     }
 
@@ -84,7 +79,7 @@ struct StatsView: View {
 
         for session in completedSessions where session.startedAt >= cutoff {
             let day = calendar.startOfDay(for: session.startedAt)
-            let duration = (session.endedAt ?? session.plannedEndAt).timeIntervalSince(session.startedAt)
+            let duration = (session.endedAt ?? session.startedAt).timeIntervalSince(session.startedAt)
             totals[day, default: 0] += duration / 60
         }
 

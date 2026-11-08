@@ -10,12 +10,6 @@ struct MenuBarContentView: View {
     @State private var selectedProfileID: UUID?
     @State private var strictMode = false
 
-    private let durations: [(String, TimeInterval)] = [
-        ("25 min", 25 * 60),
-        ("50 min", 50 * 60),
-        ("90 min", 90 * 60),
-    ]
-
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             if sessionManager.activeQuickSession != nil {
@@ -40,7 +34,7 @@ struct MenuBarContentView: View {
             }
         }
         .padding(16)
-        .frame(width: 280)
+        .frame(width: 260)
         .onAppear {
             if selectedProfileID == nil {
                 selectedProfileID = profiles.first?.id
@@ -50,9 +44,6 @@ struct MenuBarContentView: View {
 
     private var startSessionView: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Start a focus session")
-                .font(.headline)
-
             if profiles.isEmpty {
                 Text("Create a block profile in Knob first.")
                     .foregroundStyle(.secondary)
@@ -66,32 +57,32 @@ struct MenuBarContentView: View {
 
                 Toggle("Strict mode", isOn: $strictMode)
 
-                ForEach(durations, id: \.0) { label, duration in
-                    Button(label) {
-                        start(duration: duration)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                Button("Start Focus") {
+                    start()
                 }
+                .buttonStyle(.borderedProminent)
+                .frame(maxWidth: .infinity)
             }
         }
     }
 
     private var activeSessionView: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Focus session active")
-                .font(.headline)
-            Text(remainingText)
-                .font(.system(size: 28, weight: .semibold, design: .rounded))
+            Text("Focused for")
+                .foregroundStyle(.secondary)
+            Text(elapsedText)
+                .font(.system(size: 32, weight: .semibold, design: .rounded))
                 .monospacedDigit()
 
             if sessionManager.isStrictModeActive {
                 StrictUnlockButton {
-                    sessionManager.endQuickSession(early: true)
+                    sessionManager.endQuickSession()
                 }
             } else {
                 Button("End Session") {
-                    sessionManager.endQuickSession(early: true)
+                    sessionManager.endQuickSession()
                 }
+                .frame(maxWidth: .infinity)
             }
         }
     }
@@ -105,14 +96,19 @@ struct MenuBarContentView: View {
         }
     }
 
-    private var remainingText: String {
-        let remaining = Int(sessionManager.quickSessionRemaining)
-        return String(format: "%d:%02d", remaining / 60, remaining % 60)
+    private var elapsedText: String {
+        let elapsed = Int(sessionManager.quickSessionElapsed)
+        let hours = elapsed / 3600
+        let minutes = (elapsed % 3600) / 60
+        let seconds = elapsed % 60
+        return hours > 0
+            ? String(format: "%d:%02d:%02d", hours, minutes, seconds)
+            : String(format: "%d:%02d", minutes, seconds)
     }
 
-    private func start(duration: TimeInterval) {
+    private func start() {
         guard let id = selectedProfileID, let profile = profiles.first(where: { $0.id == id }) else { return }
-        sessionManager.startQuickSession(profile: profile, duration: duration, strictMode: strictMode)
+        sessionManager.startQuickSession(profile: profile, strictMode: strictMode)
     }
 }
 

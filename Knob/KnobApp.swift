@@ -27,7 +27,7 @@ struct KnobApp: App {
         }
         .menuBarExtraStyle(.window)
 
-        WindowGroup(id: "main") {
+        Window("Knob", id: "main") {
             if onboardingComplete {
                 MainWindowView()
                     .environmentObject(sessionManager)

@@ -8,34 +8,34 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
-            Section("General") {
-                Toggle("Launch Knob at login", isOn: $launchAtLogin)
-                    .onChange(of: launchAtLogin, toggleLaunchAtLogin)
+            Toggle("Launch Knob at login", isOn: $launchAtLogin)
+                .onChange(of: launchAtLogin, toggleLaunchAtLogin)
 
-                Toggle("Session notifications", isOn: $notificationsEnabled)
-                    .onChange(of: notificationsEnabled) { _, newValue in
-                        NotificationManager.enabled = newValue
-                        if newValue {
-                            NotificationManager.requestAuthorization()
-                        }
-                    }
-            }
-
-            Section("Website Filter") {
-                Button("Re-check Website Filter Setup") {
-                    Task {
-                        do {
-                            try await WebFilterController.shared.setUp()
-                            filterStatusMessage = "Website filter is enabled."
-                        } catch {
-                            filterStatusMessage = error.localizedDescription
-                        }
+            Toggle("Session notifications", isOn: $notificationsEnabled)
+                .onChange(of: notificationsEnabled) { _, newValue in
+                    NotificationManager.enabled = newValue
+                    if newValue {
+                        NotificationManager.requestAuthorization()
                     }
                 }
-                if let filterStatusMessage {
-                    Text(filterStatusMessage)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+
+            if FeatureFlags.websiteBlockingEnabled {
+                Section("Website Filter") {
+                    Button("Re-check Website Filter Setup") {
+                        Task {
+                            do {
+                                try await WebFilterController.shared.setUp()
+                                filterStatusMessage = "Website filter is enabled."
+                            } catch {
+                                filterStatusMessage = error.localizedDescription
+                            }
+                        }
+                    }
+                    if let filterStatusMessage {
+                        Text(filterStatusMessage)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
         }

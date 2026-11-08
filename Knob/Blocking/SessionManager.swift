@@ -8,11 +8,10 @@ final class SessionManager: ObservableObject {
 
     @Published private(set) var activeQuickSession: FocusSession?
     @Published private(set) var activeScheduleIDs: Set<UUID> = []
-    @Published private(set) var quickSessionRemaining: TimeInterval = 0
+    @Published private(set) var quickSessionElapsed: TimeInterval = 0
 
     private var modelContext: ModelContext!
-    private var quickSessionTimer: Timer?
-    private var countdownTimer: Timer?
+    private var elapsedTimer: Timer?
     private var scheduleTimer: Timer?
 
     private init() {}
@@ -48,7 +47,7 @@ final class SessionManager: ObservableObject {
 
     // MARK: - Quick sessions
 
-    func startQuickSession(profile: BlockProfile, duration: TimeInterval, strictMode: Bool) {
+    func startQuickSession(profile: BlockProfile, strictMode: Bool) {
         guard activeQuickSession == nil else { return }
 
         let session = FocusSession(
@@ -56,46 +55,36 @@ final class SessionManager: ObservableObject {
             scheduleID: nil,
             kind: .quick,
             startedAt: .now,
-            plannedEndAt: .now.addingTimeInterval(duration),
             strictMode: strictMode
         )
         modelContext.insert(session)
         try? modelContext.save()
         activeQuickSession = session
-        quickSessionRemaining = duration
+        quickSessionElapsed = 0
         reapplyEnforcement()
-        NotificationManager.post(title: "Focus session started", body: "Blocking \(profile.name) for \(Int(duration / 60)) minutes.")
+        NotificationManager.post(title: "Focus session started", body: "Blocking \(profile.name).")
 
-        quickSessionTimer = Timer.scheduledTimer(withTimeInterval: duration, repeats: false) { [weak self] _ in
-            Task { @MainActor in self?.endQuickSession(early: false) }
-        }
-        countdownTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
-            Task { @MainActor in self?.tickCountdown() }
+        elapsedTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.tickElapsed() }
         }
     }
 
-    func endQuickSession(early: Bool) {
+    func endQuickSession() {
         guard let session = activeQuickSession else { return }
         session.endedAt = .now
-        session.endedEarly = early
         try? modelContext.save()
 
-        quickSessionTimer?.invalidate()
-        quickSessionTimer = nil
-        countdownTimer?.invalidate()
-        countdownTimer = nil
-        quickSessionRemaining = 0
+        elapsedTimer?.invalidate()
+        elapsedTimer = nil
+        quickSessionElapsed = 0
         activeQuickSession = nil
         reapplyEnforcement()
-        NotificationManager.post(
-            title: early ? "Focus session ended early" : "Focus session complete",
-            body: early ? "You ended the session before time was up." : "Nice work — the session finished."
-        )
+        NotificationManager.post(title: "Focus session ended", body: "Nice work.")
     }
 
-    private func tickCountdown() {
+    private func tickElapsed() {
         guard let session = activeQuickSession else { return }
-        quickSessionRemaining = max(0, session.plannedEndAt.timeIntervalSinceNow)
+        quickSessionElapsed = Date.now.timeIntervalSince(session.startedAt)
     }
 
     private func recordBlockedAttempt() {
